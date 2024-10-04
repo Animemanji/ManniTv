@@ -1,97 +1,82 @@
-import React, { Component, Fragment } from "react";
-import Head from "next/head";
-import Butter from "buttercms";
+import { useState, useEffect } from 'react';
 
-import Blogs from "../src/components/blogs";
-import Contact from "../src/components/contact";
-import Loader from "../src/assets/images/loader.svg";
-import Footer from "../src/components/footer";
-import Header from "../src/components/header";
+export default function Home() {
+  const calculateTimeLeft = () => {
+    const difference = +new Date('2024-10-06T05:30:00+05:30') - +new Date();
+    let timeLeft = {};
 
-const ButterCMSContext = React.createContext();
-const butter = Butter(process.env.BUTTER_CMS_API_KEY);
-
-class BlogsPage extends Component {
-  data = {
-    loading: true,
-    generalData: {},
-    blogsData: {},
-    contactData: {}
-  };
-
-  static async getInitialProps() {
-    try {
-      const response = await Promise.all([
-        butter.page.retrieve("*", "general"),
-        butter.post.list(),
-        butter.page.retrieve("*", "contact")
-      ]);
-
-      this.data = {
-        generalData: response[0].data.data,
-        blogsData: response[1].data.data,
-        contactData: response[2].data.data,
-        loading: false
+    if (difference > 0) {
+      timeLeft = {
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((difference / 1000 / 60) % 60),
+        seconds: Math.floor((difference / 1000) % 60),
       };
-    } catch (error) {
-      console.error(error);
     }
 
-    return {
-      data: this.data
-    };
-  }
+    return timeLeft;
+  };
 
-  render() {
-    const { data } = this.props;
+  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
 
-    return (
-      <Fragment>
-        <Head>
-          <title>Marketing Site using ButterCMS and Next.js</title>
-        </Head>
-        <ButterCMSContext.Provider
-          value={{
-            loading: data.loading,
-            generalData: data.generalData,
-            blogsData: data.blogsData,
-            contactData: data.contactData
-          }}
-        >
-          <ButterCMSContext.Consumer>
-            {({ loading, generalData, blogsData, contactData }) => {
-              if (loading)
-                return (
-                  <div className="loading">
-                    <img src={Loader} />
-                    <style jsx>
-                      {`
-                        .loading {
-                          margin: 0 auto;
-                          display: flex;
-                          justify-content: center;
-                          font-size: 14px;
-                          height: 100vh;
-                        }
-                      `}
-                    </style>
-                  </div>
-                );
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 1000);
 
-              return (
-                <Fragment>
-                  <Header data={generalData} />
-                  <Blogs data={blogsData} />
-                  <Contact data={contactData} />
-                  <Footer data={generalData} />
-                </Fragment>
-              );
-            }}
-          </ButterCMSContext.Consumer>
-        </ButterCMSContext.Provider>
-      </Fragment>
+    return () => clearTimeout(timer);
+  });
+
+  const timerComponents = [];
+
+  Object.keys(timeLeft).forEach((interval) => {
+    if (!timeLeft[interval]) {
+      return;
+    }
+
+    timerComponents.push(
+      <span key={interval}>
+        {timeLeft[interval]} {interval}{' '}
+      </span>
     );
-  }
+  });
+
+  return (
+    <div style={styles.container}>
+      <h1 style={styles.title}>Coming Soon</h1>
+      <p style={styles.subtitle}>Our website is under construction. Stay tuned!</p>
+      {timerComponents.length ? (
+        <div style={styles.timer}>
+          {timerComponents}
+        </div>
+      ) : (
+        <span>Time's up!</span>
+      )}
+    </div>
+  );
 }
 
-export default BlogsPage;
+const styles = {
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100vh',
+    backgroundColor: '#f5f5f5',
+    textAlign: 'center',
+  },
+  title: {
+    fontSize: '48px',
+    fontWeight: 'bold',
+    marginBottom: '20px',
+  },
+  subtitle: {
+    fontSize: '24px',
+    marginBottom: '40px',
+  },
+  timer: {
+    fontSize: '32px',
+    fontWeight: 'bold',
+  },
+};
